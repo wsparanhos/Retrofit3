@@ -15,7 +15,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -103,6 +102,20 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this,
                 PhotoActivity::class.java)
             startActivity(intent)
+            startActivityForResult(intent, REQUEST_PHOTO_ACTIVITY)
+
+
         }
+
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_PHOTO_ACTIVITY && resultCode == RESULT_OK) {
+            val imageBitmap = data?.extras?.get("data") as Bitmap
+            binding.imgVM.setImageBitmap(imageBitmap)
+        }
+    }
+    companion object {
+        private const val REQUEST_PHOTO_ACTIVITY = 1
     }
 }

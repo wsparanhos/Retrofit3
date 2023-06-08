@@ -21,8 +21,8 @@ class PhotoActivity : AppCompatActivity() {
 
     private lateinit var imgVF: ImageView
     private lateinit var raEditTextNumber: EditText
-    private lateinit var latTextView: MaterialTextView //EditText
-    private lateinit var longTextView: MaterialTextView  //EditText
+    private lateinit var latTextView: MaterialTextView
+    private lateinit var longTextView: MaterialTextView
     private lateinit var locationManager: LocationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,10 +39,8 @@ class PhotoActivity : AppCompatActivity() {
             capturePhoto()
         }
 
-        // Inicializar o LocationManager
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
-        // Verificar a permissão de localização e solicitar, se necessário
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -68,7 +66,7 @@ class PhotoActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            val imageBitmap = data?.extras?.getString("data") as Bitmap
+            val imageBitmap = data?.extras?.get("data") as Bitmap
             imgVF.setImageBitmap(imageBitmap)
         }
     }
@@ -82,7 +80,7 @@ class PhotoActivity : AppCompatActivity() {
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 MIN_TIME_BETWEEN_UPDATES,
-                MIN_DISTANCE_CHANGE_FOR_UPDATES.toFloat(),
+                MIN_DISTANCE_CHANGE_FOR_UPDATES,
                 locationListener
             )
         }
@@ -93,8 +91,8 @@ class PhotoActivity : AppCompatActivity() {
             val latitude = location.latitude
             val longitude = location.longitude
 
-            latTextView.setText(latitude.toString())
-            longTextView.setText(longitude.toString())
+            latTextView.text = latitude.toString()
+            longTextView.text = longitude.toString()
         }
 
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
@@ -106,7 +104,7 @@ class PhotoActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         if (requestCode == PERMISSION_REQUEST_LOCATION) {
@@ -127,4 +125,5 @@ class PhotoActivity : AppCompatActivity() {
         private const val MIN_TIME_BETWEEN_UPDATES: Long = 1000 // 1 segundo
         private const val MIN_DISTANCE_CHANGE_FOR_UPDATES: Float = 1.0f // 1 metro
     }
+
 }
