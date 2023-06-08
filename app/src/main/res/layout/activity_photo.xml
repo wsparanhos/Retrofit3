@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/imgVM"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/raEditTextNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="RA do aluno"
+        android:inputType="number"
+        android:textSize="45dp" />
+
+    <Button
+        android:id="@+id/btnTakePhotoF"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Capturar Foto" />
+
+    <ImageView
+        android:id="@+id/imgVF"
+        android:layout_width="272dp"
+        android:layout_height="258dp"
+        android:visibility="visible"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <TextView
+        android:id="@+id/latTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/longTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
+
+    <!-- Adicione outros componentes aqui, se necessário -->
+
+</LinearLayout>
