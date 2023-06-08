@@ -7,14 +7,6 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
-        tools:layout_editor_absoluteX="310dp"
-        tools:layout_editor_absoluteY="34dp" />
-
-    <TextView
         android:id="@+id/resultado"
         android:layout_width="269dp"
         android:layout_height="73dp"
