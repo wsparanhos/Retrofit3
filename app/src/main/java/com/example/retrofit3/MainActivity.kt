@@ -141,6 +141,9 @@ class MainActivity : AppCompatActivity() {
                         val latitude = location.latitude
                         val longitude = location.longitude
 
+                        binding.textViewLatitude.text = latitude.toString()
+                        binding.textViewLongitude.text = longitude.toString()
+                        
                         // Utilize as coordenadas do GPS conforme necessário
                         Log.d("GPS", "Latitude: $latitude, Longitude: $longitude")
                     } else {
