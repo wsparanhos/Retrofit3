@@ -1,13 +1,19 @@
 package com.example.retrofit3
 
+import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.location.LocationManager
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.example.retrofit3.databinding.ActivityMainBinding
 import com.google.gson.Gson
 import okhttp3.ResponseBody
@@ -99,10 +105,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnTakePhotoM.setOnClickListener{
             binding.resultado.text = "Tirar a foto!"
 
-            val intent = Intent(this,
-                PhotoActivity::class.java)
-            startActivity(intent)
-            startActivityForResult(intent, REQUEST_PHOTO_ACTIVITY)
+            //val intent = Intent(this,
+            //    PhotoActivity::class.java)
+            //startActivity(intent)
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
 
 
         }
@@ -110,12 +117,51 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_PHOTO_ACTIVITY && resultCode == RESULT_OK) {
+
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             val imageBitmap = data?.extras?.get("data") as Bitmap
             binding.imgVM.setImageBitmap(imageBitmap)
+
+            // Verificar permissão para acessar a localização
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                // Obter o serviço de localização
+                val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+                // Verificar se o GPS está habilitado
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    // Obter a última localização conhecida
+                    val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+
+                    // Verificar se a localização é válida
+                    if (location != null) {
+                        val latitude = location.latitude
+                        val longitude = location.longitude
+
+                        // Utilize as coordenadas do GPS conforme necessário
+                        Log.d("GPS", "Latitude: $latitude, Longitude: $longitude")
+                    } else {
+                        // Caso a localização seja nula, pode ser necessário solicitar uma atualização da localização
+                        // ou exibir uma mensagem ao usuário informando que a localização não está disponível no momento.
+                        Log.d("GPS", "Localização não disponível")
+                    }
+                } else {
+                    // Caso o GPS não esteja habilitado, você pode solicitar ao usuário para habilitá-lo
+                    // ou exibir uma mensagem informando que o GPS está desabilitado.
+                    Log.d("GPS", "GPS desabilitado")
+                }
+            } else {
+                // Caso a permissão de acesso à localização não tenha sido concedida pelo usuário, você pode
+                // solicitar a permissão novamente ou exibir uma mensagem informando que a permissão é necessária.
+                Log.d("GPS", "Permissão de localização não concedida")
+            }
         }
     }
     companion object {
         private const val REQUEST_PHOTO_ACTIVITY = 1
+        private const val REQUEST_IMAGE_CAPTURE = 1
     }
 }
