@@ -7,7 +7,10 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface ApiServicePost {
-    @Headers("Content-Type: application/json")
+    @Headers(
+        "Content-Type: application/json",
+        "User-Agent: Retrofit3"
+    )
     @POST("/DS/dsApiIns.php")
-    fun sendDados(@Body req: String ): Call<ResponseBody>
+    fun sendDados(@Body req: String): Call<ResponseBody>
 }
