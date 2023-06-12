@@ -19,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.retrofit3.databinding.ActivityMainBinding
 import com.google.gson.Gson
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
@@ -42,9 +44,21 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnLerQrCode.setOnClickListener {
-            val intent = Intent(this, QRCodeReaderActivity::class.java)
-            startActivity(intent)
+            val integrator = IntentIntegrator(this)
+            integrator.setOrientationLocked(false) // Permitir rotação da tela
+            integrator.setPrompt("Aponte a câmera para o QR Code") // Mensagem para o usuário
+            integrator.initiateScan()
         }
+
+        //binding.btnLerQrCode.setOnClickListener {
+        //    val oomScoreAdjFile = File("/proc/28672/oom_score_adj")
+        //    if (oomScoreAdjFile.canWrite()) {
+        //        println("QRCode - O processo tem permissões adequadas para escrever no arquivo")
+        //    } else {
+        //        println("QrCode - O processo não tem permissões adequadas para escrever no arquivo")
+        //        println("QrCode - Neste caso, é necessário executar o processo como usuário root ou com privilégios de administrador")
+        //    }
+        //}
 
         binding.btnGet.setOnClickListener {
 
@@ -89,103 +103,119 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnPost.setOnClickListener {
-            println("passei 1")
-            val ra = findViewById<EditText>(R.id.raEditTextNumber).text.toString()
-            println("passei 2")
-            val lat = findViewById<TextView>(R.id.latTextView).text.toString()
-            println("passei 3")
-            val long = findViewById<TextView>(
-            R.id.textViewLongitude).text.toString()
-            println("passei 4")
-            val img = findViewById<ImageView>(R.id.imgVM)
-            println("passei 5")
-            val bitmap = (img.drawable as BitmapDrawable).bitmap
-            println("passei 6")
-            val baos = ByteArrayOutputStream()
-            println("passei 7")
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-            val imageBytes = baos.toByteArray()
-            val base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT)
-            dadosI = DadosI(ra, lat, long, base64Image)
+            try {
+                val ra = findViewById<EditText>(R.id.raEditTextNumber).text.toString()
+                val lat = findViewById<TextView>(R.id.latTextView).text.toString()
+                val long = findViewById<TextView>(R.id.longTextView).text.toString()
+                val img = findViewById<ImageView>(R.id.imgVM)
+                val bitmap = (img.drawable as BitmapDrawable).bitmap
+                val baos = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 10, baos)
+                val imageBytes = baos.toByteArray()
+                val base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT)
+                dadosI = DadosI(ra, lat, long, base64Image)
 
-            val gson = Gson().newBuilder().disableHtmlEscaping().create()
-            val str = gson.toJson(dadosI)
+                val gson = Gson().newBuilder().disableHtmlEscaping().create()
+                val str = gson.toJson(dadosI)
 
-            mApiServicePost = ApiClient.client.create(ApiServicePost::class.java)
-            val call = mApiServicePost!!.sendDados(str)
-            call!!.enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    Log.d("Resposta", "Resp: " + response.body().toString())
-                }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    Log.e("Erro", "Got Error: " + t.localizedMessage)
-                }
-            })
+                mApiServicePost = ApiClient.client.create(ApiServicePost::class.java)
+                val call = mApiServicePost!!.sendDados(str)
+                call!!.enqueue(object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                        Log.d("Resposta", "Resp: " + response.body().toString())
+                    }
+                    override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                        Log.e("Erro", "Got Error: " + t.localizedMessage)
+                    }
+                })
+            } catch (e: Exception) {
+                Log.e("Erro", "Erro ao realizar o envio de dados: ${e.message}")
+            }
         }
+
 
 
         binding.btnTakePhotoM.setOnClickListener{
             binding.resultado.text = "Tirar a foto!"
-
-            //val intent = Intent(this,
-            //    PhotoActivity::class.java)
-            //startActivity(intent)
             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
         }
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+        //super.onActivityResult(requestCode, resultCode, data)
+        try {
+            println("MAIN-Passei 1 $REQUEST_IMAGE_CAPTURE $RESULT_OK")
+            if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+                val imageBitmap = data?.extras?.get("data") as? Bitmap
+                binding.imgVM.setImageBitmap(imageBitmap)
+                // Verificar permissão para acessar a localização
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    // Obter o serviço de localização
+                    val locationManager =
+                        getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            val imageBitmap = data?.extras?.get("data") as Bitmap
-            binding.imgVM.setImageBitmap(imageBitmap)
+                    // Verificar se o GPS está habilitado
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        // Obter a última localização conhecida
+                        val location =
+                            locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
 
-            // Verificar permissão para acessar a localização
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                // Obter o serviço de localização
-                val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                        // Verificar se a localização é válida
+                        if (location != null) {
+                            val latitude = location.latitude
+                            val longitude = location.longitude
 
-                // Verificar se o GPS está habilitado
-                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    // Obter a última localização conhecida
-                    val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                            binding.latTextView.text = latitude.toString()
+                            binding.longTextView.text = longitude.toString()
 
-                    // Verificar se a localização é válida
-                    if (location != null) {
-                        val latitude = location.latitude
-                        val longitude = location.longitude
-
-                        binding.textViewLatitude.text = latitude.toString()
-                        binding.textViewLongitude.text = longitude.toString()
-
-                        // Utilize as coordenadas do GPS conforme necessário
-                        Log.d("GPS", "Latitude: $latitude, Longitude: $longitude")
+                            // Utilize as coordenadas do GPS conforme necessário
+                            Log.d("GPS", "Latitude: $latitude, Longitude: $longitude")
+                        } else {
+                            // Caso a localização seja nula, pode ser necessário solicitar uma atualização da localização
+                            // ou exibir uma mensagem ao usuário informando que a localização não está disponível no momento.
+                            Log.d("GPS", "Localização não disponível")
+                        }
                     } else {
-                        // Caso a localização seja nula, pode ser necessário solicitar uma atualização da localização
-                        // ou exibir uma mensagem ao usuário informando que a localização não está disponível no momento.
-                        Log.d("GPS", "Localização não disponível")
+                        // Caso o GPS não esteja habilitado, você pode solicitar ao usuário para habilitá-lo
+                        // ou exibir uma mensagem informando que o GPS está desabilitado.
+                        Log.d("GPS", "GPS desabilitado")
                     }
                 } else {
-                    // Caso o GPS não esteja habilitado, você pode solicitar ao usuário para habilitá-lo
-                    // ou exibir uma mensagem informando que o GPS está desabilitado.
-                    Log.d("GPS", "GPS desabilitado")
+                    // Caso a permissão de acesso à localização não tenha sido concedida pelo usuário, você pode
+                    // solicitar a permissão novamente ou exibir uma mensagem informando que a permissão é necessária.
+                    Log.d("GPS", "Permissão de localização não concedida")
                 }
-            } else {
-                // Caso a permissão de acesso à localização não tenha sido concedida pelo usuário, você pode
-                // solicitar a permissão novamente ou exibir uma mensagem informando que a permissão é necessária.
-                Log.d("GPS", "Permissão de localização não concedida")
+            } else if (requestCode == REQUEST_QR_CODE && resultCode == RESULT_OK) {
+                val result: IntentResult? =
+                    IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+
+                if (result != null) {
+                    if (result.contents == null) {
+                        Log.d("QRCODE", "Leitura do QR Code cancelada")
+                    } else {
+                        val qrCodeResult = result.contents
+                        Log.d("QRCODE", "Resultado do QR Code: $qrCodeResult")
+
+                        // Exibir o resultado em uma TextView ou fazer outras ações
+                        // Exemplo:
+                        binding.tvQRCodeResult.text = qrCodeResult
+                    }
+                } else {
+                    super.onActivityResult(requestCode, resultCode, data)
+                }
             }
+        } catch (e: Exception) {
+            Log.e("Erro", "Erro ao tratar o resultado da atividade: ${e.message}")
         }
     }
+
     companion object {
         private const val REQUEST_PHOTO_ACTIVITY = 1
         private const val REQUEST_IMAGE_CAPTURE = 1
-        private const val REQUEST_QR_CODE = 1
+        private const val REQUEST_QR_CODE = 2
     }
 }

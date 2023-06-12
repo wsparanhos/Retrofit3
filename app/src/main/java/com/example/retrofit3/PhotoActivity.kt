@@ -36,7 +36,20 @@ class PhotoActivity : AppCompatActivity() {
         val btnTakePhotoF: Button = findViewById(R.id.btnTakePhotoF)
 
         btnTakePhotoF.setOnClickListener {
-            capturePhoto()
+            println("PHOTO-Passei 0")
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                capturePhoto()
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.CAMERA),
+                    PERMISSION_REQUEST_CAMERA
+                )
+            }
         }
 
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
@@ -58,6 +71,7 @@ class PhotoActivity : AppCompatActivity() {
 
     private fun capturePhoto() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        println("PHOTO-Passei 1")
         if (takePictureIntent.resolveActivity(packageManager) != null) {
             startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
         }
@@ -65,9 +79,15 @@ class PhotoActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        println("PHOTO-Passei 2")
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            val imageBitmap = data?.extras?.get("data") as Bitmap
-            imgVF.setImageBitmap(imageBitmap)
+            val imageBitmap = data?.extras?.getString("data") as? Bitmap
+            println("PHOTO-Passei 1")
+            if (imageBitmap != null) {
+                imgVF.setImageBitmap(imageBitmap)
+            } else {
+                // Tratar caso o valor retornado seja nulo
+            }
         }
     }
 
@@ -77,12 +97,16 @@ class PhotoActivity : AppCompatActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                MIN_TIME_BETWEEN_UPDATES,
-                MIN_DISTANCE_CHANGE_FOR_UPDATES,
-                locationListener
-            )
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    MIN_TIME_BETWEEN_UPDATES,
+                    MIN_DISTANCE_CHANGE_FOR_UPDATES,
+                    locationListener
+                )
+            } else {
+                // Exibir mensagem ou solicitar que o usuário habilite a localização
+            }
         }
     }
 
@@ -97,9 +121,13 @@ class PhotoActivity : AppCompatActivity() {
 
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
 
-        //override fun onProviderEnabled(provider: String?) {}
+        override fun onProviderEnabled(provider: String) {
+            // Provedor de localização ativado
+        }
 
-        //override fun onProviderDisabled(provider: String?) {}
+        override fun onProviderDisabled(provider: String) {
+            // Provedor de localização desativado
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -107,9 +135,15 @@ class PhotoActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         if (requestCode == PERMISSION_REQUEST_LOCATION) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startLocationUpdates()
+            }
+        } else if (requestCode == PERMISSION_REQUEST_CAMERA) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                capturePhoto()
             }
         }
     }
@@ -122,8 +156,8 @@ class PhotoActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_IMAGE_CAPTURE = 1
         private const val PERMISSION_REQUEST_LOCATION = 2
+        private const val PERMISSION_REQUEST_CAMERA = 3
         private const val MIN_TIME_BETWEEN_UPDATES: Long = 1000 // 1 segundo
         private const val MIN_DISTANCE_CHANGE_FOR_UPDATES: Float = 1.0f // 1 metro
     }
-
 }
