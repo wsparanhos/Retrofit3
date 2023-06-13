@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnLerQrCode.setOnClickListener {
             val integrator = IntentIntegrator(this)
-            integrator.setOrientationLocked(false) // Permitir rotação da tela
+            integrator.setOrientationLocked(true) // Permitir rotação da tela
             integrator.setPrompt("Aponte a câmera para o QR Code") // Mensagem para o usuário
             integrator.initiateScan()
         }
@@ -106,34 +106,46 @@ class MainActivity : AppCompatActivity() {
             try {
                 val ra = findViewById<EditText>(R.id.raEditTextNumber).text.toString()
                 val lat = findViewById<TextView>(R.id.latTextView).text.toString()
-                val long = findViewById<TextView>(R.id.longTextView).text.toString()
+                val lon = findViewById<TextView>(R.id.longTextView).text.toString()
                 val img = findViewById<ImageView>(R.id.imgVM)
-                val bitmap = (img.drawable as BitmapDrawable).bitmap
-                val baos = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 10, baos)
-                val imageBytes = baos.toByteArray()
-                val base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT)
-                dadosI = DadosI(ra, lat, long, base64Image)
+                val drawable = img.drawable
+                if (drawable is BitmapDrawable) {
+                    val bitmap = drawable.bitmap
+                    val baos = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
+                    if (baos.size() > 0) {
+                        val imageBytes = baos.toByteArray()
+                        val base64Image = "data:image/jpeg;base64," + Base64.encodeToString(imageBytes, Base64.DEFAULT)
+                        Log.d("BASE64", ra)
+                        Log.d("BASE64", lat)
+                        Log.d("BASE64", lon)
+                        Log.d("BASE64", base64Image)
+                        dadosI = DadosI(ra, lat, lon, base64Image)
+                        //dadosI = DadosI("8888","43.1234567891012154","-122", base64Image)
+                        var gson = Gson().newBuilder().disableHtmlEscaping().create()
+                        var str = gson.toJson(dadosI)
 
-                val gson = Gson().newBuilder().disableHtmlEscaping().create()
-                val str = gson.toJson(dadosI)
+                        mApiServicePost = ApiClient.client.create(ApiServicePost::class.java)
+                        val call = mApiServicePost!!.sendDados(str)
+                        call!!.enqueue(object : Callback<ResponseBody> {
+                            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                                Log.d("Resposta", "Resp: " + response.body().toString())
+                            }
 
-                mApiServicePost = ApiClient.client.create(ApiServicePost::class.java)
-                val call = mApiServicePost!!.sendDados(str)
-                call!!.enqueue(object : Callback<ResponseBody> {
-                    override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                        Log.d("Resposta", "Resp: " + response.body().toString())
+                            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                                Log.e("Erro", "Got Error: " + t.localizedMessage)
+                            }
+                        })
+                    } else {
+                        Log.e("Erro", "O ByteArrayOutputStream está vazio")
                     }
-                    override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                        Log.e("Erro", "Got Error: " + t.localizedMessage)
-                    }
-                })
+                } else {
+                    Log.e("Erro", "A imagem não é um BitmapDrawable")
+                }
             } catch (e: Exception) {
                 Log.e("Erro", "Erro ao realizar o envio de dados: ${e.message}")
             }
         }
-
-
 
         binding.btnTakePhotoM.setOnClickListener{
             binding.resultado.text = "Tirar a foto!"
@@ -143,6 +155,7 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         //super.onActivityResult(requestCode, resultCode, data)
+        Log.d("QRCODE", "1121")
         try {
             println("MAIN-Passei 1 $REQUEST_IMAGE_CAPTURE $RESULT_OK")
             if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
@@ -189,7 +202,7 @@ class MainActivity : AppCompatActivity() {
                     // solicitar a permissão novamente ou exibir uma mensagem informando que a permissão é necessária.
                     Log.d("GPS", "Permissão de localização não concedida")
                 }
-            } else if (requestCode == REQUEST_QR_CODE && resultCode == RESULT_OK) {
+            } else if (/*requestCode == REQUEST_QR_CODE && */ resultCode == RESULT_OK ) {
                 val result: IntentResult? =
                     IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
 
@@ -197,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                     if (result.contents == null) {
                         Log.d("QRCODE", "Leitura do QR Code cancelada")
                     } else {
-                        val qrCodeResult = result.contents
+                        var qrCodeResult = result.contents
                         Log.d("QRCODE", "Resultado do QR Code: $qrCodeResult")
 
                         // Exibir o resultado em uma TextView ou fazer outras ações
